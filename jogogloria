@@ -1,0 +1,309 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+
+#define RESET "\033[0m"
+#define RED "\033[31m"
+#define BLUE "\033[34m"
+#define WHITE "\033[37m"
+#define YELLOW "\033[33m"
+
+bool jogadap1 = 1;
+bool jogadap2 = 1;
+
+struct Nums {
+    bool jogador1 = 0;
+    bool jogador2 = 0;
+};
+
+Nums myMatrix[5][6]; // 5 linhas x 6 colunas = 30 casas
+
+// Função para  o estado da célula
+string Estado(Nums x) {
+    if (x.jogador1 && x.jogador2) return "🟡 🟢";
+    if (x.jogador1) return " 🟡  ";
+    if (x.jogador2) return " 🟢  ";
+    return "     ";    
+}
+
+// Função do dado
+int Dado() {
+    cin.get();
+    int valor = rand() % 6 + 1;
+    return valor;
+}
+
+//função para andar
+int Andar(Nums matriz[5][6], bool jogador1, int valor) {
+    int posAtual = -1;
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 6; j++) {
+            if (jogador1 && matriz[i][j].jogador1) {
+                posAtual = i * 6 + j;
+                matriz[i][j].jogador1 = false;
+            } else if (!jogador1 && matriz[i][j].jogador2) {
+                posAtual = i * 6 + j;
+                matriz[i][j].jogador2 = false;
+            }
+        }
+    }
+
+    if (posAtual == -1) posAtual = 0;
+    int novaPos = posAtual + valor;
+    if (novaPos > 29) novaPos = 29;  
+   
+    int novaLinha = novaPos / 6;
+    int novaColuna = novaPos % 6;
+   
+    if (jogador1)
+        matriz[novaLinha][novaColuna].jogador1 = true;
+    else
+        matriz[novaLinha][novaColuna].jogador2 = true;
+       
+    cout << (jogador1 ? "🟡 Jogador 1 " : "🟢 Jogador 2 ")
+         << "andou para a casa " << (novaPos + 1) << "!\n";
+
+    return novaPos;
+}
+
+// Função para mostrar o tabuleiro
+void Taboleiro(Nums matriz[5][6]) {
+    int contador = 1;
+    cout << "\n===== TABULEIRO DO JOGO DA GLÓRIA =====\n\n";
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 6; j++) cout << "+-------";
+        cout << "+\n";
+
+        for (int j = 0; j < 6; j++) {
+
+            string corFundo = "";
+
+            // Casa 6 amarelo
+            if (contador == 6) {
+                corFundo = "\033[43m";
+            }
+            // Casa 9 magenta
+            else if (contador == 9) {
+                corFundo = "\033[45m";
+            }
+            // Casa 15 vermelho
+            else if (contador == 15) {
+                corFundo = "\033[41m";
+            }
+            // Casa 23 azul
+            else if (contador == 23) {
+                corFundo = "\033[44m";
+            }
+            // Casa 26 →branco
+            else if (contador == 26) {
+                corFundo = "\033[47m";
+            }
+
+            cout << "| " << corFundo;
+
+            if (contador < 10)
+                cout << BLUE << contador << "     " << RESET;
+            else
+                cout << BLUE << contador << "    " << RESET;
+
+            cout << RESET;
+
+            contador++;
+        }
+
+        cout << "|\n";
+
+        for (int j = 0; j < 6; j++) {
+            cout << "| " << Estado(matriz[i][j]) << " ";
+        }
+        cout << "|\n";
+    }
+
+    for (int j = 0; j < 6; j++) cout << "+-------";
+    cout << "+\n";
+
+    cout << "\n=======================================\n";
+}
+
+// Função de casas especiais para voltare andar 3 casas /6/15
+void VoltaAnda(Nums matriz[5][6]) {
+    if (matriz[0][5].jogador1 || matriz[0][5].jogador2 ||
+        matriz[2][2].jogador1 || matriz[2][2].jogador2) {
+
+        if (matriz[0][5].jogador1) {
+            matriz[0][5].jogador1 = 0;
+            matriz[0][2].jogador1 = 1;
+        } else if (matriz[2][2].jogador1) {
+            matriz[2][2].jogador1 = 0;
+            matriz[2][5].jogador1 = 1;
+        }
+
+        if (matriz[0][5].jogador2) {
+            matriz[0][5].jogador2 = 0;
+            matriz[0][2].jogador2 = 1;
+        } else if (matriz[2][2].jogador2) {
+            matriz[2][2].jogador2 = 0;
+            matriz[2][5].jogador2 = 1;
+        }
+    }
+}
+
+//  Função de espera na casa /9
+void espera(Nums matriz[5][6], bool &jogadap1, bool &jogadap2) {
+    if (matriz[1][2].jogador1) {
+        cout << RED << "\n🟡 Jogador 1 caiu na casa de espera! Perde a próxima rodada.\n" << RESET;
+        jogadap1 = false;
+    }
+    if (matriz[1][2].jogador2) {
+        cout << RED << "\n🟢 Jogador 2 caiu na casa de espera! Perde a próxima rodada.\n" << RESET;
+        jogadap2 = false;
+    }
+}
+
+//  Função jogar novamente na casa 23 
+bool jogaNovamente(Nums matriz[5][6]) {
+    if (matriz[3][4].jogador1 || matriz[3][4].jogador2) {
+        cout << YELLOW << "\n⭐Casa 23! O jogador vai jogar novamente!\n" << RESET;
+        return true;
+    }
+    return false;
+}
+
+//  Função bloqueio na casa 26 
+void bloqueioCasa26(Nums matriz[5][6], bool &preso1, bool &preso2, int pos1, int pos2) {
+    int linha = 4;
+    int coluna = 1;
+
+    if (matriz[linha][coluna].jogador1 && pos2 <= 25) {
+        cout << RED << "\n🟡 Jogador 1 está preso na casa 26! Esperando o jogador 2 passar.\n" << RESET;
+        preso1 = true;
+    } else {
+        preso1 = false;
+    }
+
+    if (matriz[linha][coluna].jogador2 && pos1 <= 25) {
+        cout << RED << "\n🟢 Jogador 2 está preso na casa 26! Esperando o jogador 1 passar.\n" << RESET;
+        preso2 = true;
+    } else {
+        preso2 = false;
+    }
+}
+
+int main() {
+    
+    cout << "Bem vindo ao jogo da gloria"<<endl;
+    cout << "   "<<endl;
+    cout << "Ao  longo do jogo tem 5 casas especiais: "<<endl;
+    cout << "Na casa 6 volta 3 casas(amarelo)"<<endl;
+    cout << "Na casa 9 espera uma rodada(magenta)"<<endl;
+    cout << "Na casa 15 avansa 3 casas(vermelho )"<<endl;
+    cout << "Na casa 23 espara uma rodada(azul)" <<endl;
+    cout << "Na casa 26 espera o  outro jogador passar a frente(branco)"<<endl;
+    cout << "Quando os jogadores tiverem prontos precione 2 veses no Enter"<<endl
+     cin.get();
+     system("clear");  
+    srand(time(0));
+
+    myMatrix[0][0].jogador1 = true;
+    myMatrix[0][0].jogador2 = true;
+
+    int pos1 = 0, pos2 = 0;
+    bool fim = false;
+
+   
+    bool preso1 = false;
+    bool preso2 = false;
+
+    while (!fim) {
+        int valor = Dado();
+
+       
+        if (jogadap1 && !preso1) {
+            system("clear");  
+            Taboleiro(myMatrix);
+
+            cout << "\n=== VEZ DO JOGADOR 1 ===\n";
+            cout << BLUE << "\nPressione ENTER para rolar o dado 🎲..." << RESET;
+            int valor = Dado();
+            pos1 = Andar(myMatrix, true, valor);
+
+            if (pos1 == 29) {
+                system("clear");
+                Taboleiro(myMatrix);
+                cout << YELLOW << "\n🏆 Jogador 1 venceu o jogo da glória!\n" << RESET;
+                break;
+            }
+
+            VoltaAnda(myMatrix);
+            espera(myMatrix, jogadap1, jogadap2);
+            bloqueioCasa26(myMatrix, preso1, preso2, pos1, pos2);
+
+            while (jogaNovamente(myMatrix)) {
+                cout << BLUE << "\n🎲 Jogador 1 joga novamente!\n" << RESET;
+                int valorExtra = Dado();
+                pos1 = Andar(myMatrix, true, valorExtra);
+                VoltaAnda(myMatrix);
+                espera(myMatrix, jogadap1, jogadap2);
+                bloqueioCasa26(myMatrix, preso1, preso2, pos1, pos2);
+            }
+
+            system("clear");  
+            Taboleiro(myMatrix);
+            cout << BLUE << "Você rolou o número: " << valor << RESET << endl;
+            cout << "\nPressione ENTER para trocar de jogador..." << endl;
+            cin.get();
+        } else if (preso1) {
+            cout << RED << "🟡 Jogador 1 está preso e não pode jogar esta rodada.\n" << RESET;
+        } else {
+            cout << RED << "🟡 Jogador 1 está esperando esta rodada...\n" << RESET;
+            jogadap1 = true;
+        }
+
+       
+        if (jogadap2 && !preso2) {
+            system("clear");
+            Taboleiro(myMatrix);
+
+            cout << "\n=== VEZ DO JOGADOR 2 ===\n";
+            cout << BLUE << "\nPressione ENTER para rolar o dado 🎲..." << RESET;
+            valor = Dado();
+            pos2 = Andar(myMatrix, false, valor);
+
+            if (pos2 == 29) {
+                system("clear");
+                Taboleiro(myMatrix);
+                cout << YELLOW << "\n🏆 Jogador 2 venceu o jogo da glória!\n" << RESET;
+                break;
+            }
+
+            VoltaAnda(myMatrix);
+            espera(myMatrix, jogadap1, jogadap2);
+            bloqueioCasa26(myMatrix, preso1, preso2, pos1, pos2);
+
+            while (jogaNovamente(myMatrix)) {
+                cout << BLUE << "\n🎲 Jogador 2 joga novamente!\n" << RESET;
+                int valorExtra = Dado();
+                pos2 = Andar(myMatrix, false, valorExtra);
+                VoltaAnda(myMatrix);
+                espera(myMatrix, jogadap1, jogadap2);
+                bloqueioCasa26(myMatrix, preso1, preso2, pos1, pos2);
+            }
+
+            system("clear");  
+            Taboleiro(myMatrix);
+            cout << BLUE << "Você rolou o número: " << valor << RESET << endl;
+            cout << "\nPressione ENTER para trocar de jogador..." << endl;
+            cin.get();
+        } else if (preso2) {
+            cout << RED << "🟢 Jogador 2 está preso e não pode jogar esta rodada.\n" << RESET;
+        } else {
+            cout << RED << "🟢 Jogador 2 está esperando esta rodada...\n" << RESET;
+            jogadap2 = true;
+        }
+    }
+
+    return 0;
+}
