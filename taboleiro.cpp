@@ -47,8 +47,8 @@ int Sorteio(vector<int> matriz[5][20]) {
 // Função que verifica se um número já foi sorteado
 
 bool jaFoiSorteado(int n) {
-    // Usa std::find para buscar o número no vetor de sorteados
-    return find(numerosSorteados.begin(), numerosSorteados.end(), n) != numerosSorteados.end();
+    // find para buscar o número no vetor de sorteados
+    return find(numerosSorteados.begin(), numerosSorteados.end(), n) != numerosSorteados.end(); //Retorna true se o número n já está no vetor numerosSorteados. Retorna false caso contrário
 }
 
 
